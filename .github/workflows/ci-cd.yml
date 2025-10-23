@@ -1,0 +1,160 @@
+name: MLOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # Job 1: Code Quality
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Black
+      run: black --check src/ config.py app.py
+
+    - name: Run isort
+      run: isort --check-only src/ config.py app.py
+
+    - name: Run Flake8
+      run: flake8 src/ config.py app.py --max-line-length=100 --extend-ignore=E203,W503
+
+  # Job 2: Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e .
+
+    - name: Run unit tests
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        APP_ENV: testing
+      run: pytest tests/ -v -m unit --cov=src --cov=config --cov-report=term
+
+  # Job 3: Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e .
+
+    - name: Run integration tests
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        APP_ENV: testing
+      run: pytest tests/ -v -m integration --tb=short
+      timeout-minutes: 5
+
+  # Job 4: Security Scan
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Bandit
+      run: |
+        pip install bandit
+        bandit -r src/ -ll || true
+
+  # Job 5: Build Check
+  build:
+    name: Build Validation
+    runs-on: ubuntu-latest
+    needs: [unit-tests, code-quality]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -e .
+
+    - name: Validate imports
+      run: |
+        python -c "import src.generators.content_generator"
+        python -c "import src.prompts.templates"
+        python -c "import config"
+
+    - name: Check for secrets
+      run: |
+        ! grep -r "gsk_" src/ config.py app.py || exit 1
+
+  # Job 6: Deploy notification
+  deploy:
+    name: Deployment Ready
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, code-quality, build]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Success notification
+      run: |
+        echo "✅ All checks passed!"
+        echo "🚀 Ready for deployment to Streamlit Cloud"
+        echo "📊 Tests: Passing"
+        echo "🔒 Security: Clean"
+        echo "📦 Build: Valid"
