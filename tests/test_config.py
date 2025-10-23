@@ -1,8 +1,6 @@
 """
 Unit tests for configuration management
 """
-# import os
-
 import pytest
 
 from config import Config
@@ -70,5 +68,6 @@ class TestConfig:
     @pytest.mark.unit
     def test_config_env_values(self):
         """Test environment variable handling"""
-        assert Config.APP_ENV in ["development", "production", "staging"]
+        # Allow 'testing' environment for CI/CD
+        assert Config.APP_ENV in ["development", "production", "staging", "testing"]
         assert Config.LOG_LEVEL in ["DEBUG", "INFO", "WARNING", "ERROR"]
