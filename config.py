@@ -2,6 +2,7 @@
 Configuration management for Growces Content Generator
 Handles environment variables and app settings
 """
+
 import logging
 import os
 from typing import Optional

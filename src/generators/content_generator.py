@@ -2,6 +2,7 @@
 Content generation engine using Groq API
 with error handling and retries
 """
+
 import logging
 import time
 from typing import Dict
@@ -152,7 +153,11 @@ class ContentGenerator:
 
         if result["success"]:
             result["type"] = "email"
-            result["parameters"] = {"purpose": purpose, "audience": audience, "tone": tone}
+            result["parameters"] = {
+                "purpose": purpose,
+                "audience": audience,
+                "tone": tone,
+            }
 
         return result
 

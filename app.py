@@ -2,6 +2,7 @@
 Growces AI Content Generator - Main Application
 Production-ready Streamlit app for content generation
 """
+
 # import os
 # import time
 from datetime import datetime
@@ -13,7 +14,10 @@ from src.generators.content_generator import ContentGenerator
 
 # Page configuration
 st.set_page_config(
-    page_title=Config.APP_NAME, page_icon="🚀", layout="wide", initial_sidebar_state="expanded"
+    page_title=Config.APP_NAME,
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 # Custom CSS for professional look
@@ -114,7 +118,14 @@ with st.sidebar:
     # Tone selection
     tone = st.selectbox(
         "🎨 Tone",
-        ["Professional", "Casual", "Friendly", "Authoritative", "Conversational", "Enthusiastic"],
+        [
+            "Professional",
+            "Casual",
+            "Friendly",
+            "Authoritative",
+            "Conversational",
+            "Enthusiastic",
+        ],
         help="Choose the writing tone",
     )
 
@@ -159,7 +170,12 @@ with tab1:
                 help="Approximate length of the blog post",
             )
 
-            params = {"topic": topic, "keywords": keywords, "tone": tone, "word_count": word_count}
+            params = {
+                "topic": topic,
+                "keywords": keywords,
+                "tone": tone,
+                "word_count": word_count,
+            }
 
         elif content_type == "Social Media Post":
             topic = st.text_input(
@@ -185,7 +201,11 @@ with tab1:
                 help="Who is this ad for?",
             )
 
-            params = {"product": product, "target_audience": target_audience, "tone": tone}
+            params = {
+                "product": product,
+                "target_audience": target_audience,
+                "tone": tone,
+            }
 
         elif content_type == "Email Template":
             purpose = st.text_input(
@@ -257,7 +277,11 @@ with tab1:
                     if result["success"]:
                         st.session_state.generated_content = result
                         st.session_state.generation_history.append(
-                            {"timestamp": datetime.now(), "type": content_type, "result": result}
+                            {
+                                "timestamp": datetime.now(),
+                                "type": content_type,
+                                "result": result,
+                            }
                         )
                         st.session_state.total_generated += 1
 
@@ -298,7 +322,10 @@ with tab1:
 
         st.markdown("### Content:")
         st.text_area(
-            "Generated Content", result["content"], height=400, label_visibility="collapsed"
+            "Generated Content",
+            result["content"],
+            height=400,
+            label_visibility="collapsed",
         )
 
         # Download options
@@ -332,7 +359,12 @@ with tab2:
     if st.session_state.generation_history:
         for idx, item in enumerate(reversed(st.session_state.generation_history[-10:])):
             with st.expander(f"{item['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} - {item['type']}"):
-                st.text_area("Content", item["result"]["content"], height=200, key=f"history_{idx}")
+                st.text_area(
+                    "Content",
+                    item["result"]["content"],
+                    height=200,
+                    key=f"history_{idx}",
+                )
                 st.caption(
                     f"Tokens: {item['result']['tokens']} | Time: {item['result']['time']:.2f}s"
                 )
